@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointment Management</title>
+  <link rel="stylesheet" href="appo.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="menu-icon" id="menu-icon">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="petrecord.html">Pet Records</a></li>
+      <li><a href="manage.html">Manage Records</a></li>
+      <li><a href="appo.html">Appointment Scheduling Management</a></li>
+      <li><a href="login.html" id="logout-btn">Log Out</a></li>
+    </ul>
+  </nav>
+
+  <h1>Appointment Scheduling Management</h1>
+
+  <div class="container">
+    <div class="create-appointment">
+      <h2>Create Appointment</h2>
+      <form id="create-appointment-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="serviceType">Service Type:</label>
+        <select id="serviceType" name="serviceType" required>
+          <option value="">Select Service Type</option>
+          <option value="grooming">Grooming</option>
+          <option value="checkup">Check-up</option>
+          <option value="vaccination">Vaccination</option>
+        </select>
+
+        <label for="date">Appointment Date:</label>
+        <input type="date" id="date" name="date" required>
+
+        <label for="time">Appointment Time:</label>
+        <input type="time" id="time" name="time" required>
+
+        <button type="submit">Create Appointment</button>
+      </form>
+    </div>
+
+    <div id="appointments" class="appointments-section"></div>
+  </div>
+
+  <footer>
+    <p>&copy;2024 VetMedica. All rights reserved.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module" src="appo.js"></script>
+
+  <script>
+    const menuIcon = document.getElementById('menu-icon');
+    const navLinks = document.getElementById('nav-links');
+
+    menuIcon.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+      menuIcon.classList.toggle('active');
+    });
+  </script>
+</body>
+</html>

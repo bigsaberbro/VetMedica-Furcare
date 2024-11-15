@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pet Records List</title>
+  <link rel="stylesheet" href="pet.css"> 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="menu-icon" id="menu-icon">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="petrecord.html">Pet Records</a></li>
+      <li><a href="manage.html">Manage Records</a></li>
+      <li><a href="appo.html">Appointment Scheduling Management</a></li>
+      <li><a href="login.html" id="logout-btn">Log Out</a></li>
+    </ul>
+  </nav>
+
+  <h1>Pet Records List</h1>
+ 
+  <div class="pet-count">
+    <p id="pet-count">Loading pet records...</p>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Search Records by Name">
+    <button id="search-button">Search</button>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Pet Name</th>
+          <th>Species</th>
+          <th>Breed</th>
+          <th>Age</th>
+          <th>Pet Size</th>
+          <th>Vaccine Name</th>
+          <th>Date Administered</th>
+          <th>Next Due Date</th>
+          <th>Email</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="record-list"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
+      authDomain: "vetmedica-67582.firebaseapp.com",
+      databaseURL: "https://vetmedica-67582-default-rtdb.firebaseio.com",
+      projectId: "vetmedica-67582",
+      storageBucket: "vetmedica-67582.firebasestorage.app",
+      messagingSenderId: "189278245149",
+      appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
+      measurementId: "G-TNPKG0NZR8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    
+    function loadPetRecords() {
+      const dbRef = ref(db, 'petRecords'); 
+      const tableBody = document.getElementById('record-list');
+      const petCountElement = document.getElementById('pet-count');
+
+      
+      tableBody.innerHTML = '';
+      petCountElement.textContent = "Loading..."; 
+
+      
+      onValue(dbRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const records = snapshot.val();
+          const recordCount = Object.keys(records).length; 
+
+          
+          petCountElement.textContent = `Total Pet Records: ${recordCount}`;
+
+          
+          for (const id in records) {
+            if (records.hasOwnProperty(id)) {
+              const pet = records[id];
+              const row = document.createElement('tr');
+
+              row.innerHTML = `
+                <td>${pet.petName}</td>
+                <td>${pet.petSpecies}</td>
+                <td>${pet.petBreed}</td>
+                <td>${pet.petAge}</td>
+                <td>${pet.petSize}</td>
+                <td>${pet.vaccineName}</td>
+                <td>${pet.dateAdministered}</td>
+                <td>${pet.nextDueDate}</td>
+                <td>${pet.email}</td>
+                <td><button class="delete-btn" data-id="${id}">Delete</button></td>
+              `;
+
+              tableBody.appendChild(row);
+            }
+          }
+
+          
+          const deleteButtons = document.querySelectorAll('.delete-btn');
+          deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+              const petId = button.getAttribute('data-id');
+              deletePetRecord(petId);
+            });
+          });
+        } else {
+          petCountElement.textContent = "No pet records available.";
+        }
+      });
+    }
+
+    
+    async function deletePetRecord(id) {
+      const dbRef = ref(db, 'petRecords/' + id);
+      try {
+        await remove(dbRef); 
+        loadPetRecords();
+      } catch (error) {
+        console.error("Error deleting data: ", error);
+      }
+    }
+
+    window.onload = loadPetRecords;
+
+    
+    document.getElementById('search-button').addEventListener('click', function() {
+      const searchQuery = document.getElementById('search-input').value.toLowerCase();
+      const rows = document.querySelectorAll('#record-list tr');
+      rows.forEach(row => {
+        const petName = row.cells[0].textContent.toLowerCase();
+        if (petName.includes(searchQuery)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+
+    const menuIcon = document.getElementById('menu-icon');
+    const navLinks = document.getElementById('nav-links');
+    menuIcon.addEventListener('click', () => {
+      menuIcon.classList.toggle('active');
+      navLinks.classList.toggle('active');
+    });
+  </script>
+</body>
+</html>

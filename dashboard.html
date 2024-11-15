@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VetMedica Admin Panel</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+
+<body>
+    <nav>
+        <div class="menu-icon" id="menu-icon">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+        <ul class="nav-links" id="nav-links">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="petrecord.html">Pet Records</a></li>
+            <li><a href="manage.html">Manage Records</a></li>
+            <li><a href="appo.html">Appointment Scheduling Management</a></li>
+            <li><a href="login.html" id="logout-btn">Log Out</a></li>
+        </ul>
+    </nav>
+
+    <header>
+        <h1>VetMedica Admin Panel</h1>
+    </header>
+
+    <main>
+        <section class="info-panel">
+            <a href="user.html" class="info-card">
+                <h2>Active Users</h2>
+                <p id="active-users-count">Loading...</p>
+            </a>
+            <a href="manage.html" class="info-card">
+                <h2>Record</h2>
+                <p id="record-count">Loading...</p>
+            </a>
+        </section>
+        <section class="info-panel">
+            <a href="pet.html" class="info-card">
+                <h2>Pet Record List</h2>
+                <p id="pet-record">Loading...</p>
+            </a>
+            <a href="list.html" class="info-card">
+                <h2>Appointment List</h2>
+                <p id="appo-record">Loading...</p>
+            </a>
+        </section>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+    
+        const firebaseConfig = {
+            apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
+            authDomain: "vetmedica-67582.firebaseapp.com",
+            databaseURL: "https://vetmedica-67582-default-rtdb.firebaseio.com",
+            projectId: "vetmedica-67582",
+            storageBucket: "vetmedica-67582.firebasestorage.app",
+            messagingSenderId: "189278245149",
+            appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
+            measurementId: "G-TNPKG0NZR8"
+        };
+    
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+    
+        const appointmentsRef = ref(database, 'appointments');
+        const petRecordsRef = ref(database, 'petRecords'); 
+    
+        
+        onValue(petRecordsRef, (snapshot) => {
+            const data = snapshot.val();
+            const petCount = data ? Object.keys(data).length : 0;
+            document.getElementById("pet-record").textContent = petCount;
+        });
+    
+        
+        onValue(appointmentsRef, (snapshot) => {
+            const data = snapshot.val();
+            const count = data ? Object.keys(data).length : 0;
+            document.getElementById("record-count").textContent = count;
+        });
+
+        const menuIcon = document.getElementById('menu-icon');
+        const navLinks = document.getElementById('nav-links');
+        menuIcon.addEventListener('click', () => {
+            menuIcon.classList.toggle('active');
+            navLinks.classList.toggle('active');
+        });
+    </script>
+    
+</body>
+</html>

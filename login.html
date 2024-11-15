@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FurCare Admin Panel</title>
+    <link rel="stylesheet" href="login.css">
+</head>
+
+<body>
+    <div class="panel">
+        <div class="logo">
+            <span class="circle"></span>
+            <h1>FurCare Admin Panel</h1>
+        </div>
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Enter your username">
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password">
+            </div>
+            <button type="submit">Login</button>
+            <p id="errorMessage"></p>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
+            authDomain: "vetmedica-67582.firebaseapp.com",
+            databaseURL: "https://vetmedica-67582-default-rtdb.firebaseio.com",
+            projectId: "vetmedica-67582",
+            storageBucket: "vetmedica-67582.appspot.com",
+            messagingSenderId: "189278245149",
+            appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
+            measurementId: "G-TNPKG0NZR8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        document.getElementById('loginForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const enteredUsername = document.getElementById('username').value;
+            const enteredPassword = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+
+            const credentialsRef = ref(database, 'adminCredentials');
+            get(credentialsRef)
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const adminData = snapshot.val();
+
+                        if (enteredUsername === adminData.username && enteredPassword === adminData.password) {
+                            errorMessage.style.color = 'green';
+                            errorMessage.textContent = 'Login successful!';
+
+                            setTimeout(function () {
+                                window.location.href = "dashboard.html";
+                            }, 2000);
+                        } else {
+                            errorMessage.style.color = 'red';
+                            errorMessage.textContent = 'Invalid username or password!';
+                        }
+                    } else {
+                        errorMessage.style.color = 'red';
+                        errorMessage.textContent = 'Admin credentials not found!';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error fetching admin credentials:', error);
+                    errorMessage.style.color = 'red';
+                    errorMessage.textContent = 'Error fetching credentials. Please try again later.';
+                });
+        });
+    </script>
+</body>
+</html>

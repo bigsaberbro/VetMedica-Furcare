@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pet Records</title>
+  <link rel="stylesheet" href="petrecord.css">
+  <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+    import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
+      authDomain: "vetmedica-67582.firebaseapp.com",
+      databaseURL: "https://vetmedica-67582-default-rtdb.firebaseio.com",
+      projectId: "vetmedica-67582",
+      storageBucket: "vetmedica-67582.appspot.com",
+      messagingSenderId: "189278245149",
+      appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
+      measurementId: "G-TNPKG0NZR8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const form = document.getElementById("pet-form");
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      const petName = document.getElementById("pet-name").value;
+      const petSpecies = document.getElementById("pet-species").value;
+      const petBreed = document.getElementById("pet-breed").value;
+      const petAge = document.getElementById("pet-age").value;
+      const petSize = document.getElementById("pet-size").value;
+      const vaccineName = document.getElementById("vaccine-name").value;
+      const dateAdministered = document.getElementById("date-administered").value;
+      const nextDueDate = document.getElementById("next-due-date").value;
+      const medicalDescription = document.getElementById("medical-description").value;
+      const email = document.getElementById("email").value;
+
+      const newPetRecordRef = ref(database, 'petRecords/' + Date.now());
+      set(newPetRecordRef, {
+        petName,
+        petSpecies,
+        petBreed,
+        petAge,
+        petSize,
+        vaccineName,
+        dateAdministered,
+        nextDueDate,
+        medicalDescription,
+        email
+      })
+      .then(() => {
+        alert("Pet record added successfully!");
+        form.reset();  
+
+        
+        clearExistingRecords();  
+
+      
+        sendEmail(petName, petSpecies, petBreed, petAge, petSize, vaccineName, dateAdministered, nextDueDate, medicalDescription, email);
+      })
+      .catch((error) => {
+        alert("Error adding record: " + error);
+      });
+    });
+
+    const sendEmail = (petName, petSpecies, petBreed, petAge, petSize, vaccineName, dateAdministered, nextDueDate, medicalDescription, email) => {
+      emailjs.init("lHgqJhLF3Z6Mh6ffL"); 
+
+      const emailParams = {
+        petName: petName,
+        petSpecies: petSpecies,
+        petBreed: petBreed,
+        petAge: petAge,
+        petSize: petSize,
+        vaccineName: vaccineName,
+        dateAdministered: dateAdministered,
+        nextDueDate: nextDueDate,
+        medicalDescription: medicalDescription,
+        email: email
+      };
+
+      emailjs.send("service_le3e8wj", "template_iqy3kmk", emailParams)
+        .then((response) => {
+          console.log("Email sent successfully", response);
+        })
+        .catch((error) => {
+          console.error("Error sending email:", error);
+        });
+    };
+
+    const menuIcon = document.getElementById('menu-icon');
+    const navLinks = document.getElementById('nav-links');
+    menuIcon.addEventListener('click', () => {
+      menuIcon.classList.toggle('active');
+      navLinks.classList.toggle('active');
+    });
+
+    window.onload = displayRecords;
+  </script>
+</head>
+<body>
+  <nav>
+    <div class="menu-icon" id="menu-icon">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="petrecord.html">Pet Records</a></li>
+      <li><a href="manage.html">Manage Records</a></li>
+      <li><a href="appo.html">Appointment Scheduling Management</a></li>
+      <li><a href="login.html" id="logout-btn">Log Out</a></li>
+    </ul>
+  </nav>
+
+  <header>
+    <h1>Pet Records</h1>
+  </header>
+
+  <div class="container">
+    <section class="pet-info-container">
+      <h2>Pet Information</h2>
+      <form id="pet-form">
+        <label for="pet-name">Pet Name:</label>
+        <input type="text" id="pet-name" name="pet-name" placeholder="Enter pet's name" required>
+
+        <label for="pet-species">Species:</label>
+        <select id="pet-species" name="pet-species" required>
+          <option value="">Select Species</option>
+          <option value="dog">Dog</option>
+          <option value="cat">Cat</option>
+        </select>
+
+        <label for="pet-breed">Breed (optional):</label>
+        <input type="text" id="pet-breed" name="pet-breed" placeholder="Enter breed (if applicable)">
+
+        <label for="pet-age">Age:</label>
+        <input type="number" id="pet-age" name="pet-age" min="0" placeholder="Enter pet's age" required>
+
+        <label for="pet-size">Pet Size:</label>
+        <select id="pet-size" name="pet-size" required>
+          <option value="">Select Size</option>
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </select>
+
+        <h2>Vaccination Records</h2>
+        <label for="vaccine-name">Vaccine Name:</label>
+        <input type="text" id="vaccine-name" name="vaccine-name" placeholder="Enter vaccine name" required>
+
+        <label for="date-administered">Date Administered:</label>
+        <input type="date" id="date-administered" name="date-administered" required>
+
+        <label for="next-due-date">Next Due Date:</label>
+        <input type="date" id="next-due-date" name="next-due-date" required>
+
+        <h2>Medical Notes (Optional)</h2>
+        <label for="medical-description">Medical Description:</label>
+        <textarea id="medical-description" name="medical-description" placeholder="Enter any medical details"></textarea>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" placeholder="Enter pet owner's email" required>
+
+        <button type="submit">Add Record</button>
+      </form>
+    </section>
+  </div>
+
+  <footer>
+    <p>&copy; 2024 VetMedica Furcare</p>
+  </footer>
+
+</body>
+</html>
