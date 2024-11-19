@@ -50,11 +50,6 @@
 
   <button id="download-pdf">Download Report</button>
 
-  <h2>Analytics</h2>
-  <canvas id="weekly-chart" width="400" height="200"></canvas>
-  <canvas id="monthly-chart" width="400" height="200"></canvas>
-  <canvas id="annual-chart" width="400" height="200"></canvas>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
     import { getDatabase, ref, onValue, remove, set } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
@@ -77,15 +72,7 @@
     const searchInput = document.getElementById('search-input');
 
     let currentRecords = {};
-    const weeklyCtx = document.getElementById('weekly-chart').getContext('2d');
-    const monthlyCtx = document.getElementById('monthly-chart').getContext('2d');
-    const annualCtx = document.getElementById('annual-chart').getContext('2d');
 
-    let weeklyData = { labels: [], counts: [] };
-    let monthlyData = { labels: [], counts: [] };
-    let annualData = { labels: [], counts: [] };
-
-    // Alarm setup
     const alarmSound = new Audio('ASMRZ - "Good night ojosama".mp3');
 
     function playAlarm() {
@@ -100,7 +87,7 @@
         const record = records[id];
         const row = document.createElement('tr');
 
-        row.innerHTML = `
+        row.innerHTML = ` 
           <td>${id}</td>
           <td>${record.name}</td>
           <td>${record.email}</td>
@@ -114,10 +101,8 @@
           </td>
         `;
         recordsTableBody.appendChild(row);
-        // Check if an alarm should be triggered
         setAlarmForAppointment(record);
       });
-      
 
       document.querySelectorAll('.update-btn').forEach(button => {
         button.addEventListener('click', handleUpdate);
@@ -132,7 +117,6 @@
     onValue(appointmentsRef, (snapshot) => {
       const appointments = snapshot.val();
       renderRecords(appointments);
-      processAnalytics(appointments);
     });
 
     document.getElementById('search-button').addEventListener('click', () => {
@@ -155,99 +139,15 @@
       const currentTime = new Date();
       const timeDifference = appointmentTime - currentTime;
 
-      // Trigger the alarm if the appointment is in 5 minutes
       if (timeDifference > 0 && timeDifference <= 5 * 60 * 1000) {
         setTimeout(playAlarm, timeDifference - 5 * 60 * 1000);
       }
-    }
-    
-
-    function processAnalytics(data) {
-      const weeklyCounts = { Week1: 0, Week2: 0, Week3: 0, Week4: 0, Week5: 0 };
-      const monthlyCounts = { checkup: 0, vaccination: 0, grooming: 0 };
-      const annualCounts = { Jan: 0, Feb: 0, Mar: 0, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0 };
-    
-      for (const id in data) {
-        const appointment = data[id];
-        const date = new Date(appointment.date);
-        const week = Math.ceil(date.getDate() / 7);
-        const month = date.toLocaleString('default', { month: 'short' });
-    
-        weeklyCounts[`Week${week}`] += 1;
-        if (monthlyCounts[appointment.serviceType]) {
-          monthlyCounts[appointment.serviceType] += 1;
-        }
-        annualCounts[month] += 1;
-      }
-    
-      weeklyData = { labels: Object.keys(weeklyCounts), counts: Object.values(weeklyCounts) };
-      monthlyData = { labels: Object.keys(monthlyCounts), counts: Object.values(monthlyCounts) };
-      annualData = { labels: Object.keys(annualCounts), counts: Object.values(annualCounts) };
-    
-      generateCharts();
-    }
-    
-
-    function generateCharts() {
-      new Chart(weeklyCtx, {
-        type: 'bar',
-        data: {
-          labels: weeklyData.labels,
-          datasets: [{
-            label: 'Weekly Appointments',
-            data: weeklyData.counts,
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1
-          }]
-        }
-      });
-
-      new Chart(monthlyCtx, {
-        type: 'pie',
-        data: {
-          labels: monthlyData.labels,
-          datasets: [{
-            label: 'Monthly Service Breakdown',
-            data: monthlyData.counts,
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
-          }]
-        }
-      });
-
-      new Chart(annualCtx, {
-        type: 'line',
-        data: {
-          labels: annualData.labels,
-          datasets: [{
-            label: 'Annual Trends',
-            data: annualData.counts,
-            borderColor: '#4BC0C0',
-            fill: false
-          }]
-        }
-      });
     }
 
     document.getElementById('download-pdf').addEventListener('click', () => {
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF();
       pdf.text("VetMedica Analytics Report", 10, 10);
-
-      pdf.text("Weekly Appointments:", 10, 20);
-      weeklyData.labels.forEach((label, i) => {
-        pdf.text(`${label}: ${weeklyData.counts[i]}`, 10, 30 + i * 10);
-      });
-
-      pdf.text("Monthly Service Breakdown:", 10, 70);
-      monthlyData.labels.forEach((label, i) => {
-        pdf.text(`${label}: ${monthlyData.counts[i]}`, 10, 80 + i * 10);
-      });
-
-      pdf.text("Annual Trends:", 10, 120);
-      annualData.labels.forEach((label, i) => {
-        pdf.text(`${label}: ${annualData.counts[i]}`, 10, 130 + i * 10);
-      });
 
       pdf.save("VetMedica_Furcare_Analytics_Report.pdf");
     });
@@ -288,6 +188,7 @@
       row.querySelector('.save-btn').addEventListener('click', (event) => saveRecord(event, recordId));
       row.querySelector('.cancel-btn').addEventListener('click', () => renderRecords(currentRecords));
     }
+
     function saveRecord(event, recordId) {
       const row = event.target.closest('tr');
       const updatedRecord = {
@@ -324,7 +225,7 @@
         remove(ref(db, 'appointments/' + recordId)).then(() => {
           alert("Record deleted successfully.");
         }).catch((error) => {
-          console.error("Error deleting record: ", error);
+          console.error("Error deleting record:", error);
         });
       }
     }
