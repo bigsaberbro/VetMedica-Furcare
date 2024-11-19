@@ -7,11 +7,9 @@
   <link rel="stylesheet" href="petrecord.css">
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <script type="module">
-    // Import Firebase libraries
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
     import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
 
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
       authDomain: "vetmedica-67582.firebaseapp.com",
@@ -20,25 +18,65 @@
       storageBucket: "vetmedica-67582.appspot.com",
       messagingSenderId: "189278245149",
       appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
-      measurementId: "G-TNPKG0NZR8"
+      measurementId: "G-TNPKG0NZR8",
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    // Initialize EmailJS
-    emailjs.init("VOC7SB-kqh4F-Q4Bb"); // Replace YOUR_USER_ID with your actual EmailJS user ID
+    emailjs.init("VOC7SB-kqh4F-Q4Bb");
 
-    // Form submission handler
     const form = document.getElementById("pet-form");
+    const speciesSelect = document.getElementById("pet-species");
+    const breedInput = document.getElementById("pet-breed");
+
+    const breedOptions = {
+      cat: [
+      "Select a Cat",
+        "Persian",
+        "Maine Coon",
+        "Siamese",
+        "Bengal",
+        "British Shorthair",
+        "Ragdoll",
+        "Sphynx",
+        "Scottish Fold",
+        "Others",
+      ],
+      dog: [
+        "Select a Dog",
+        "Shih Tzu",
+        "Pug",
+        "Aspin",
+        "Pomeranian",
+        "Husky",
+        "Corgi",
+        "Dachshund",
+        "Dalmatian",
+        "Others",
+      ],
+    };
+
+    speciesSelect.addEventListener("change", () => {
+      const selectedSpecies = speciesSelect.value;
+      breedInput.innerHTML = "";
+
+      if (breedOptions[selectedSpecies]) {
+        breedOptions[selectedSpecies].forEach((breed) => {
+          const option = document.createElement("option");
+          option.value = breed;
+          option.textContent = breed;
+          breedInput.appendChild(option);
+        });
+      }
+    });
+
     form.addEventListener("submit", function (event) {
       event.preventDefault();
 
-      // Collect form data
       const petName = document.getElementById("pet-name").value;
-      const petSpecies = document.getElementById("pet-species").value;
-      const petBreed = document.getElementById("pet-breed").value;
+      const petSpecies = speciesSelect.value;
+      const petBreed = breedInput.value;
       const petAge = document.getElementById("pet-age").value;
       const petSize = document.getElementById("pet-size").value;
       const vaccineName = document.getElementById("vaccine-name").value;
@@ -47,7 +85,6 @@
       const medicalDescription = document.getElementById("medical-description").value;
       const email = document.getElementById("email").value;
 
-      // Save data to Firebase
       const newPetRecordRef = ref(database, 'petRecords/' + Date.now());
       set(newPetRecordRef, {
         petName,
@@ -59,21 +96,18 @@
         dateAdministered,
         nextDueDate,
         medicalDescription,
-        email
+        email,
       })
-      .then(() => {
-        alert("Pet record added successfully!");
-        form.reset();
-
-        // Send email notification
-        sendEmail(petName, petSpecies, petBreed, petAge, petSize, vaccineName, dateAdministered, nextDueDate, medicalDescription, email);
-      })
-      .catch((error) => {
-        alert("Error adding record: " + error.message);
-      });
+        .then(() => {
+          alert("Pet record added successfully!");
+          form.reset();
+          sendEmail(petName, petSpecies, petBreed, petAge, petSize, vaccineName, dateAdministered, nextDueDate, medicalDescription, email);
+        })
+        .catch((error) => {
+          alert("Error adding record: " + error.message);
+        });
     });
 
-    // Send email function
     const sendEmail = (petName, petSpecies, petBreed, petAge, petSize, vaccineName, dateAdministered, nextDueDate, medicalDescription, email) => {
       const emailParams = {
         pet_name: petName,
@@ -85,10 +119,11 @@
         date_administered: dateAdministered,
         next_due_date: nextDueDate,
         medical_description: medicalDescription,
-        owner_email: email
+        owner_email: email,
       };
 
-      emailjs.send("service_odmj3ha", "template_vfefuoq", emailParams) // Replace placeholders with actual IDs
+      emailjs
+        .send("service_odmj3ha", "template_vfefuoq", emailParams)
         .then((response) => {
           console.log("Email sent successfully", response);
           alert("Email sent to the pet owner successfully!");
@@ -140,11 +175,13 @@
           <option value="cat">Cat</option>
         </select>
 
-        <label for="pet-breed">Breed (optional):</label>
-        <input type="text" id="pet-breed" name="pet-breed" placeholder="Enter breed (if applicable)">
+        <label for="pet-breed">Breed:</label>
+        <select id="pet-breed" name="pet-breed" required>
+          <option value="">Select Breed</option>
+        </select>
 
         <label for="pet-age">Age:</label>
-        <input type="number" id="pet-age" name="pet-age" min="0" placeholder="Enter pet's age" required>
+        <input type="number" id="pet-age" name="pet-age" min="0" max="20" placeholder="Enter pet's age" required>
 
         <label for="pet-size">Pet Size:</label>
         <select id="pet-size" name="pet-size" required>
