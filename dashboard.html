@@ -7,6 +7,7 @@
     <title>VetMedica Admin Panel</title>
     <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Ensure Chart.js is included -->
 </head>
 
 <body>
@@ -50,12 +51,19 @@
                 <p id="appo-record">Loading...</p>
             </a>
         </section>
+        <div>
+            <h2>DATA CHART</h2>
+            <canvas id="weekly-chart" class="chart" style="border: 1px solid #ccc;"></canvas>
+            <canvas id="monthly-chart" class="chart" style="border: 1px solid #ccc;"></canvas>
+            <canvas id="annual-chart" class="chart" style="border: 1px solid #ccc;"></canvas>
+        </div>
+        
     </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
-    
+
         const firebaseConfig = {
             apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
             authDomain: "vetmedica-67582.firebaseapp.com",
@@ -66,25 +74,96 @@
             appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
             measurementId: "G-TNPKG0NZR8"
         };
-    
+
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
-    
+
         const appointmentsRef = ref(database, 'appointments');
-        const petRecordsRef = ref(database, 'petRecords'); 
-    
-        
+        const petRecordsRef = ref(database, 'petRecords');
+
         onValue(petRecordsRef, (snapshot) => {
             const data = snapshot.val();
             const petCount = data ? Object.keys(data).length : 0;
             document.getElementById("pet-record").textContent = petCount;
         });
-    
-        
+
         onValue(appointmentsRef, (snapshot) => {
             const data = snapshot.val();
             const count = data ? Object.keys(data).length : 0;
             document.getElementById("record-count").textContent = count;
+            processAnalytics(data);
+        });
+
+        const weeklyCtx = document.getElementById('weekly-chart').getContext('2d');
+        const monthlyCtx = document.getElementById('monthly-chart').getContext('2d');
+        const annualCtx = document.getElementById('annual-chart').getContext('2d');
+
+        function processAnalytics(data) {
+            const weeklyCounts = { Week1: 0, Week2: 0, Week3: 0, Week4: 0, Week5: 0 };
+            const monthlyCounts = { checkup: 0, vaccination: 0, grooming: 0 };
+            const annualCounts = { Jan: 0, Feb: 0, Mar: 0, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0 };
+
+            for (const id in data) {
+                const appointment = data[id];
+                const date = new Date(appointment.date);
+                const week = Math.ceil(date.getDate() / 7);
+                const month = date.toLocaleString('default', { month: 'short' });
+
+                weeklyCounts[`Week${week}`] = (weeklyCounts[`Week${week}`] || 0) + 1;
+                monthlyCounts[appointment.serviceType] = (monthlyCounts[appointment.serviceType] || 0) + 1;
+                annualCounts[month] += 1;
+            }
+
+            generateCharts(weeklyCounts, monthlyCounts, annualCounts);
+        }
+
+        function generateCharts(weeklyCounts, monthlyCounts, annualCounts) {
+            new Chart(weeklyCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(weeklyCounts),
+                    datasets: [{
+                        label: 'Weekly Appointments',
+                        data: Object.values(weeklyCounts),
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                }
+            });
+
+            new Chart(monthlyCtx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(monthlyCounts),
+                    datasets: [{
+                        label: 'Monthly Service Breakdown',
+                        data: Object.values(monthlyCounts),
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                    }]
+                }
+            });
+
+            new Chart(annualCtx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(annualCounts),
+                    datasets: [{
+                        label: 'Annual Trends',
+                        data: Object.values(annualCounts),
+                        borderColor: '#4BC0C0',
+                        fill: false
+                    }]
+                }
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            const charts = [weeklyCtx, monthlyCtx, annualCtx];
+            charts.forEach(ctx => {
+                ctx.canvas.width = window.innerWidth * 0.6;
+                ctx.canvas.height = window.innerHeight * 0.3; 
+            });
         });
 
         const menuIcon = document.getElementById('menu-icon');
@@ -94,6 +173,6 @@
             navLinks.classList.toggle('active');
         });
     </script>
-    
+
 </body>
 </html>
