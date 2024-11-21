@@ -80,6 +80,7 @@
 
         const appointmentsRef = ref(database, 'appointments');
         const petRecordsRef = ref(database, 'petRecords');
+        const mobileAppointmentsRef = ref(database, 'mobileAppointments');
 
         onValue(petRecordsRef, (snapshot) => {
             const data = snapshot.val();
@@ -91,6 +92,13 @@
             const data = snapshot.val();
             const count = data ? Object.keys(data).length : 0;
             document.getElementById("record-count").textContent = count;
+            processAnalytics(data);
+        });
+
+        onValue(mobileAppointmentsRef, (snapshot) => {
+            const data = snapshot.val();
+            const count = data ? Object.keys(data).length : 0;
+            document.getElementById("appo-record").textContent = count;
             processAnalytics(data);
         });
 
