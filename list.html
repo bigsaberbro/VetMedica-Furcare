@@ -45,7 +45,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getDatabase, ref, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
 
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
             authDomain: "vetmedica-67582.firebaseapp.com",
@@ -62,7 +61,6 @@
         const appointmentsRef = ref(db, "mobileAppointments");
         const tableBody = document.getElementById("records-table-body");
 
-        // Listen for changes in the database and populate the table
         onValue(appointmentsRef, (snapshot) => {
             tableBody.innerHTML = "";
             if (snapshot.exists()) {
@@ -88,7 +86,6 @@
                     `;
                     tableBody.appendChild(row);
 
-                    // Attach button event listeners
                     attachButtonListeners(row, key, appointment.status);
                 });
             } else {
@@ -96,7 +93,6 @@
             }
         });
 
-        // Function to update the status in Firebase
         async function updateAppointmentStatus(id, status) {
             try {
                 const statusRef = ref(db, `mobileAppointments/${id}`);
@@ -107,7 +103,6 @@
             }
         }
 
-        // Function to handle Accept and Reject actions
         function attachButtonListeners(row, key, currentStatus) {
             const acceptButton = row.querySelector(".accept-btn");
             const rejectButton = row.querySelector(".reject-btn");
@@ -153,7 +148,6 @@
                 const fieldValue = field.innerText;
                 const dataField = field.getAttribute("data-field");
 
-                // Update field types based on their data-field
                 if (dataField === "name") {
                     field.innerHTML = `<input type="text" value="${fieldValue}" />`;
                 } else if (dataField === "email") {
@@ -170,7 +164,6 @@
             const updateButton = row.querySelector(".update-btn");
             const deleteButton = row.querySelector(".delete-btn");
 
-            // Update functionality when fields are edited
             updateButton.style.display = "inline-block";
             deleteButton.style.display = "inline-block";
 
@@ -182,7 +175,6 @@
                 });
 
                 updateAppointment(key, updatedData);
-                // After save, update the buttons
                 updateButton.style.display = "none";
                 deleteButton.style.display = "none";
             });
@@ -200,15 +192,12 @@
             });
         }
 
-        // Function to update appointment details in Firebase
         async function updateAppointment(id, updatedData) {
             try {
-                // Fetch the current data of the appointment
                 const appointmentRef = ref(db, `mobileAppointments/${id}`);
                 const snapshot = await get(appointmentRef);
                 const currentData = snapshot.val();
 
-                // Update only the changed fields, retaining the existing ones
                 const dataToUpdate = {};
                 Object.keys(updatedData).forEach((field) => {
                     if (updatedData[field] !== currentData[field]) {
@@ -216,7 +205,6 @@
                     }
                 });
 
-                // If there are changes, update the data
                 if (Object.keys(dataToUpdate).length > 0) {
                     await update(appointmentRef, dataToUpdate);
                     console.log("Appointment updated successfully");
