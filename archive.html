@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archive</title>
+    <link rel="stylesheet" href="archive.css">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+        import { getDatabase, ref, set, push, remove, onValue, get } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-database.js";
+    
+        const firebaseConfig = {
+            apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
+            authDomain: "vetmedica-67582.firebaseapp.com",
+            databaseURL: "https://vetmedica-67582-default-rtdb.firebaseio.com",
+            projectId: "vetmedica-67582",
+            storageBucket: "vetmedica-67582.appspot.com",
+            messagingSenderId: "189278245149",
+            appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
+            measurementId: "G-TNPKG0NZR8"
+        };
+    
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+    
+        function archiveData(appointmentId) {
+            const originalRef = ref(db, `appointments/${appointmentId}`);
+            const archiveRef = ref(db, 'archive');
+
+            get(originalRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const newArchiveRef = push(archiveRef);
+                    set(newArchiveRef, data)
+                        .then(() => {
+                            remove(originalRef)
+                                .then(() => {
+                                    loadArchivedData();
+                                })
+                                .catch((error) => console.error("Error removing original data:", error));
+                        })
+                        .catch((error) => console.error("Error archiving data:", error));
+                } else {
+                    console.error("No data found for the given ID.");
+                }
+            }).catch((error) => console.error("Error reading original data:", error));
+        }
+
+        function loadArchivedData(searchTerm = '', filterStatus = 'all') {
+            const archiveRef = ref(db, "archive");
+            const recordsTableBody = document.getElementById("records-table-body");
+
+            onValue(archiveRef, (snapshot) => {
+                recordsTableBody.innerHTML = "";
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    const appointmentId = childSnapshot.key;
+                    const name = data.name || '';
+                    const status = data.status || 'No status';
+
+                    if (searchTerm && !name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                        return;
+                    }
+
+                    if (filterStatus !== 'all' && filterStatus !== status) {
+                        return;
+                    }
+
+                    const row = `
+                        <tr>
+                            <td>${appointmentId}</td>
+                            <td>${name}</td>
+                            <td>${data.email || ''}</td>
+                            <td>${data.serviceType || ''}</td>
+                            <td>${data.date || ''}</td>
+                            <td>${data.time || ''}</td>
+                            <td>${status}</td> 
+                            <td>
+                                <button class="delete-archive-btn" data-id="${appointmentId}">Delete</button>
+                                <button class="restore-archive-btn" data-id="${appointmentId}">Restore</button>
+                            </td>
+                        </tr>`;
+                    recordsTableBody.insertAdjacentHTML("beforeend", row);
+                });
+            });
+        }
+
+        function deleteFromArchive(archiveId) {
+            const archiveRef = ref(db, `archive/${archiveId}`);
+            remove(archiveRef)
+                .then(() => {
+                    loadArchivedData();
+                })
+                .catch((error) => console.error("Error deleting archive data:", error));
+        }
+
+        function restoreToAppointments(archiveId) {
+            const archiveRef = ref(db, `archive/${archiveId}`);
+            const appointmentsRef = ref(db, 'appointments');
+
+            get(archiveRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const randomId = Math.floor(100000 + Math.random() * 900000).toString();
+                    const restoredAppointmentRef = ref(db, `appointments/${randomId}`);
+
+                    set(restoredAppointmentRef, data)
+                        .then(() => {
+                            deleteFromArchive(archiveId);
+                            loadArchivedData();
+                        })
+                        .catch((error) => {
+                            console.error("Error restoring data:", error);
+                        });
+                } else {
+                    console.error("No data found in archive for the given ID.");
+                }
+            }).catch((error) => {
+                console.error("Error reading archive data:", error);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.addEventListener("click", (e) => {
+                if (e.target.classList.contains("archive-btn")) {
+                    const appointmentId = e.target.dataset.id;
+                    archiveData(appointmentId);
+                } else if (e.target.classList.contains("delete-archive-btn")) {
+                    const archiveId = e.target.dataset.id;
+                    deleteFromArchive(archiveId);
+                } else if (e.target.classList.contains("restore-archive-btn")) {
+                    const archiveId = e.target.dataset.id;
+                    restoreToAppointments(archiveId);
+                }
+            });
+
+            document.getElementById("search-button").addEventListener("click", () => {
+                const searchTerm = document.getElementById("search-input").value.trim();
+                const filterStatus = document.getElementById("status-filter").value;
+                loadArchivedData(searchTerm, filterStatus);
+            });
+
+            document.getElementById("status-filter").addEventListener("change", () => {
+                const searchTerm = document.getElementById("search-input").value.trim();
+                const filterStatus = document.getElementById("status-filter").value;
+                loadArchivedData(searchTerm, filterStatus);
+            });
+
+            loadArchivedData();
+        });
+
+    </script>    
+</head>
+<body>
+    <nav>
+        <div class="menu-icon" id="menu-icon">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+        <ul class="nav-links" id="nav-links">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="petrecord.html">Pet Records</a></li>
+            <li><a href="manage.html">Manage Records</a></li>
+            <li><a href="appo.html">Appointment Scheduling Management</a></li>
+            <li><a href="login.html" id="logout-btn">Log Out</a></li>
+        </ul>
+    </nav>
+
+    <h1>Archive</h1>
+
+    <div>
+        <input type="text" id="search-input" placeholder="Search by name">
+        <button id="search-button">Search</button>
+
+        <select id="status-filter">
+            <option value="all">All</option>
+            <option value="Approved">Approved</option>
+            <option value="rejected">Rejected</option>
+        </select>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Appointment ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Service Type</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="records-table-body">
+        </tbody>
+    </table>
+
+</body>
+</html>
