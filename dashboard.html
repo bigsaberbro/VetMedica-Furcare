@@ -5,182 +5,180 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VetMedica Admin Panel</title>
-    <link rel="stylesheet" href="dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Ensure Chart.js is included -->
+    <link rel="stylesheet" href="dashboard.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
-    <nav>
-        <div class="menu-icon" id="menu-icon">
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-        </div>
-        <ul class="nav-links" id="nav-links">
-            <li><a href="dashboard.html">Dashboard</a></li>
-            <li><a href="petrecord.html">Pet Records</a></li>
-            <li><a href="manage.html">Manage Records</a></li>
-            <li><a href="appo.html">Appointment Scheduling Management</a></li>
-            <li><a href="login.html" id="logout-btn">Log Out</a></li>
-        </ul>
-    </nav>
+  <nav>
+      <div class="menu-icon" id="menu-icon">
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+      </div>
+      <ul class="nav-links" id="nav-links">
+          <li><a href="petrecord.html">Pet Records</a></li>
+          <li><a href="manage.html">Manage Records</a></li>
+          <li><a href="appo.html">Appointment Scheduling Management</a></li>
+          <li><a href="login.html" id="logout-btn">Log Out</a></li>
+      </ul>
+  </nav>
 
-    <header>
-        <h1>VetMedica Admin Panel</h1>
-    </header>
+  <header>
+      <h1>VetMedica Admin Panel</h1>
+  </header>
 
-    <main>
-        <section class="info-panel">
-            <a href="user.html" class="info-card">
-                <h2>Active Users</h2>
-                <p id="active-users-count">Loading...</p>
-            </a>
-            <a href="manage.html" class="info-card">
-                <h2>Record</h2>
-                <p id="record-count">Loading...</p>
-            </a>
-        </section>
-        <section class="info-panel">
-            <a href="pet.html" class="info-card">
-                <h2>Pet Record List</h2>
-                <p id="pet-record">Loading...</p>
-            </a>
-            <a href="list.html" class="info-card">
-                <h2>Appointment List</h2>
-                <p id="appo-record">Loading...</p>
-            </a>
-        </section>
-        <div>
-            <h2>DATA CHART</h2>
-            <canvas id="weekly-chart" class="chart" style="border: 1px solid #ccc;"></canvas>
-            <canvas id="monthly-chart" class="chart" style="border: 1px solid #ccc;"></canvas>
-            <canvas id="annual-chart" class="chart" style="border: 1px solid #ccc;"></canvas>
-        </div>
-        
-    </main>
+  <main class="container">
+      <section class="info-panel">
+          <a href="archive.html" class="info-card">
+              <h2>Archive</h2>
+              <p id="record-count">Loading...</p>
+          </a>
+          <a href="pet.html" class="info-card">
+            <h2>Pet Record List</h2>
+            <p id="pet-record">Loading...</p>
+        </a>
+        <a href="list.html" class="info-card">
+            <h2>Appointment List</h2>
+            <p id="appo-record">Loading...</p>
+        </a>
+      </section>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+      <section class="chart-section">
+          <h2>Data Charts</h2>
+          <div class="chart-container">
+            <canvas id="weekly-chart" width="200" height="200"></canvas>
+            <canvas id="annual-chart" width="200" height="200"></canvas>
+            <canvas id="monthly-chart" width="200" height="200"></canvas>
+        </div>          
+      </section>
+  </main>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
-            authDomain: "vetmedica-67582.firebaseapp.com",
-            databaseURL: "https://vetmedica-67582-default-rtdb.firebaseio.com",
-            projectId: "vetmedica-67582",
-            storageBucket: "vetmedica-67582.firebasestorage.app",
-            messagingSenderId: "189278245149",
-            appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
-            measurementId: "G-TNPKG0NZR8"
-        };
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
 
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+    const firebaseConfig = {
+        apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
+        authDomain: "vetmedica-67582.firebaseapp.com",
+        databaseURL: "https://vetmedica-67582-default-rtdb.firebaseio.com",
+        projectId: "vetmedica-67582",
+        storageBucket: "vetmedica-67582.firebasestorage.app",
+        messagingSenderId: "189278245149",
+        appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
+        measurementId: "G-TNPKG0NZR8"
+    };
 
-        const appointmentsRef = ref(database, 'appointments');
-        const petRecordsRef = ref(database, 'petRecords');
-        const mobileAppointmentsRef = ref(database, 'mobileAppointments');
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
 
-        onValue(petRecordsRef, (snapshot) => {
-            const data = snapshot.val();
-            const petCount = data ? Object.keys(data).length : 0;
-            document.getElementById("pet-record").textContent = petCount;
-        });
+    const archiveRef = ref(database, 'archive');
+    const petRecordsRef = ref(database, 'petRecords');
+    const mobileAppointmentsRef = ref(database, 'mobileAppointments');
 
-        onValue(appointmentsRef, (snapshot) => {
-            const data = snapshot.val();
-            const count = data ? Object.keys(data).length : 0;
-            document.getElementById("record-count").textContent = count;
-            processAnalytics(data);
-        });
+    onValue(petRecordsRef, (snapshot) => {
+        const data = snapshot.val();
+        const petCount = data ? Object.keys(data).length : 0;
+        document.getElementById("pet-record").textContent = petCount;
+    });
 
-        onValue(mobileAppointmentsRef, (snapshot) => {
-            const data = snapshot.val();
-            const count = data ? Object.keys(data).length : 0;
-            document.getElementById("appo-record").textContent = count;
-            processAnalytics(data);
-        });
+    onValue(archiveRef, (snapshot) => {
+        const data = snapshot.val();
+        const count = data ? Object.keys(data).length : 0;
+        document.getElementById("record-count").textContent = count;
+        processAnalytics(data);
+    });
 
-        const weeklyCtx = document.getElementById('weekly-chart').getContext('2d');
-        const monthlyCtx = document.getElementById('monthly-chart').getContext('2d');
-        const annualCtx = document.getElementById('annual-chart').getContext('2d');
+    onValue(mobileAppointmentsRef, (snapshot) => {
+        const data = snapshot.val();
+        const count = data ? Object.keys(data).length : 0;
+        document.getElementById("appo-record").textContent = count;
+        processAnalytics(data);
+    });
 
-        function processAnalytics(data) {
-            const weeklyCounts = { Week1: 0, Week2: 0, Week3: 0, Week4: 0, Week5: 0 };
-            const monthlyCounts = { checkup: 0, vaccination: 0, grooming: 0 };
-            const annualCounts = { Jan: 0, Feb: 0, Mar: 0, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0 };
+    const weeklyCtx = document.getElementById('weekly-chart').getContext('2d');
+    const monthlyCtx = document.getElementById('monthly-chart').getContext('2d');
+    const annualCtx = document.getElementById('annual-chart').getContext('2d');
 
-            for (const id in data) {
-                const appointment = data[id];
-                const date = new Date(appointment.date);
-                const week = Math.ceil(date.getDate() / 7);
-                const month = date.toLocaleString('default', { month: 'short' });
+    function processAnalytics(data) {
+        const weeklyCounts = { Week1: 0, Week2: 0, Week3: 0, Week4: 0, Week5: 0 };
+        const monthlyCounts = { checkup: 0, vaccination: 0, grooming: 0 };
+        const annualCounts = { Jan: 0, Feb: 0, Mar: 0, Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0 };
 
-                weeklyCounts[`Week${week}`] = (weeklyCounts[`Week${week}`] || 0) + 1;
-                monthlyCounts[appointment.serviceType] = (monthlyCounts[appointment.serviceType] || 0) + 1;
-                annualCounts[month] += 1;
+        for (const id in data) {
+            const appointment = data[id];
+            const date = new Date(appointment.date);
+            const week = Math.ceil(date.getDate() / 7);
+            const month = date.toLocaleString('default', { month: 'short' });
+
+            weeklyCounts[`Week${week}`] = (weeklyCounts[`Week${week}`] || 0) + 1;
+            monthlyCounts[appointment.serviceType] = (monthlyCounts[appointment.serviceType] || 0) + 1;
+            annualCounts[month] += 1;
+        }
+
+        generateCharts(weeklyCounts, monthlyCounts, annualCounts);
+    }
+
+    function generateCharts(weeklyCounts, monthlyCounts, annualCounts) {
+        new Chart(weeklyCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(weeklyCounts),
+                datasets: [{
+                    label: 'Weekly Appointments',
+                    data: Object.values(weeklyCounts),
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
             }
-
-            generateCharts(weeklyCounts, monthlyCounts, annualCounts);
-        }
-
-        function generateCharts(weeklyCounts, monthlyCounts, annualCounts) {
-            new Chart(weeklyCtx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(weeklyCounts),
-                    datasets: [{
-                        label: 'Weekly Appointments',
-                        data: Object.values(weeklyCounts),
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                }
-            });
-
-            new Chart(monthlyCtx, {
-                type: 'pie',
-                data: {
-                    labels: Object.keys(monthlyCounts),
-                    datasets: [{
-                        label: 'Monthly Service Breakdown',
-                        data: Object.values(monthlyCounts),
-                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
-                    }]
-                }
-            });
-
-            new Chart(annualCtx, {
-                type: 'line',
-                data: {
-                    labels: Object.keys(annualCounts),
-                    datasets: [{
-                        label: 'Annual Trends',
-                        data: Object.values(annualCounts),
-                        borderColor: '#4BC0C0',
-                        fill: false
-                    }]
-                }
-            });
-        }
-
-        window.addEventListener('resize', () => {
-            const charts = [weeklyCtx, monthlyCtx, annualCtx];
-            charts.forEach(ctx => {
-                ctx.canvas.width = window.innerWidth * 0.6;
-                ctx.canvas.height = window.innerHeight * 0.3; 
-            });
         });
 
-        const menuIcon = document.getElementById('menu-icon');
-        const navLinks = document.getElementById('nav-links');
-        menuIcon.addEventListener('click', () => {
-            menuIcon.classList.toggle('active');
-            navLinks.classList.toggle('active');
+        new Chart(monthlyCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(monthlyCounts),
+                datasets: [{
+                    label: 'Monthly Service Breakdown',
+                    data: Object.values(monthlyCounts),
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                }]
+            }
         });
-    </script>
 
+        new Chart(annualCtx, {
+            type: 'line',
+            data: {
+                labels: Object.keys(annualCounts),
+                datasets: [{
+                    label: 'Annual Trends',
+                    data: Object.values(annualCounts),
+                    borderColor: '#4BC0C0',
+                    fill: false
+                }]
+            }
+        });
+    }
+
+    window.addEventListener('resize', () => {
+        const charts = [weeklyCtx, monthlyCtx, annualCtx];
+        charts.forEach(ctx => {
+            ctx.canvas.width = window.innerWidth * 0.6;
+            ctx.canvas.height = window.innerHeight * 0.3; 
+        });
+    });
+  
+    // Resize charts on window resize
+    window.addEventListener('resize', () => {
+        const charts = [weeklyCtx, monthlyCtx, annualCtx];
+        charts.forEach(ctx => {
+            ctx.canvas.width = window.innerWidth * 0.6;
+            ctx.canvas.height = 200;
+        });
+        generateCharts();
+    });
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
