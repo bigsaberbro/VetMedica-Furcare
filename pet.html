@@ -4,8 +4,43 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pet Records List</title>
-  <link rel="stylesheet" href="pet.css"> 
+  <link rel="stylesheet" href="user.css"> 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgb(0,0,0);
+      background-color: rgba(0,0,0,0.4);
+      padding-top: 60px;
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 600px;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
   <nav>
@@ -54,10 +89,20 @@
     </table>
   </div>
 
+  <div id="petModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Pet Details</h2>
+      <img id="pet-image" src="" alt="Pet Image" style="width: 100%; max-width: 300px; display: block; margin-bottom: 20px;">
+      <div id="pet-details">
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
-
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+  
     const firebaseConfig = {
       apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
       authDomain: "vetmedica-67582.firebaseapp.com",
@@ -68,53 +113,54 @@
       appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
       measurementId: "G-TNPKG0NZR8"
     };
-
+  
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-
-    
-    function loadPetRecords() {
+  
+    function loadPetRecords(searchTerm = "") {
       const dbRef = ref(db, 'petRecords'); 
       const tableBody = document.getElementById('record-list');
       const petCountElement = document.getElementById('pet-count');
-
       
       tableBody.innerHTML = '';
       petCountElement.textContent = "Loading..."; 
-
-      
+  
       onValue(dbRef, (snapshot) => {
         if (snapshot.exists()) {
           const records = snapshot.val();
-          const recordCount = Object.keys(records).length; 
-
-          
+          const filteredRecords = Object.keys(records).filter(id => {
+            const pet = records[id];
+            return pet.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                   pet.petSpecies.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                   pet.petBreed.toLowerCase().includes(searchTerm.toLowerCase());
+          });
+  
+          const recordCount = filteredRecords.length; 
           petCountElement.textContent = `Total Pet Records: ${recordCount}`;
-
-          
-          for (const id in records) {
-            if (records.hasOwnProperty(id)) {
-              const pet = records[id];
-              const row = document.createElement('tr');
-
-              row.innerHTML = `
-                <td>${pet.petName}</td>
-                <td>${pet.petSpecies}</td>
-                <td>${pet.petBreed}</td>
-                <td>${pet.petAge}</td>
-                <td>${pet.petSize}</td>
-                <td>${pet.vaccineName}</td>
-                <td>${pet.dateAdministered}</td>
-                <td>${pet.nextDueDate}</td>
-                <td>${pet.email}</td>
-                <td><button class="delete-btn" data-id="${id}">Delete</button></td>
-              `;
-
-              tableBody.appendChild(row);
-            }
-          }
-
-          
+  
+          filteredRecords.forEach(id => {
+            const pet = records[id];
+            const row = document.createElement('tr');
+  
+            row.innerHTML = `
+              <td>${pet.petName}</td>
+              <td>${pet.petSpecies}</td>
+              <td>${pet.petBreed}</td>
+              <td>${pet.petAge}</td>
+              <td>${pet.petSize}</td>
+              <td>${pet.vaccineName}</td>
+              <td>${pet.dateAdministered}</td>
+              <td>${pet.nextDueDate}</td>
+              <td>${pet.email}</td>
+              <td>
+                <button class="view-btn" data-id="${id}">View</button>
+                <button class="delete-btn" data-id="${id}">Delete</button>
+              </td>
+            `;
+  
+            tableBody.appendChild(row);
+          });
+  
           const deleteButtons = document.querySelectorAll('.delete-btn');
           deleteButtons.forEach(button => {
             button.addEventListener('click', function() {
@@ -122,13 +168,20 @@
               deletePetRecord(petId);
             });
           });
+  
+          const viewButtons = document.querySelectorAll('.view-btn');
+          viewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+              const petId = button.getAttribute('data-id');
+              viewPetDetails(petId);
+            });
+          });
         } else {
           petCountElement.textContent = "No pet records available.";
         }
       });
     }
-
-    
+  
     async function deletePetRecord(id) {
       const dbRef = ref(db, 'petRecords/' + id);
       try {
@@ -138,29 +191,61 @@
         console.error("Error deleting data: ", error);
       }
     }
-
-    window.onload = loadPetRecords;
-
-    
-    document.getElementById('search-button').addEventListener('click', function() {
-      const searchQuery = document.getElementById('search-input').value.toLowerCase();
-      const rows = document.querySelectorAll('#record-list tr');
-      rows.forEach(row => {
-        const petName = row.cells[0].textContent.toLowerCase();
-        if (petName.includes(searchQuery)) {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
+  
+    function viewPetDetails(id) {
+      const dbRef = ref(db, 'petRecords/' + id);
+      const modal = document.getElementById('petModal');
+      const petImage = document.getElementById('pet-image');
+      const petDetails = document.getElementById('pet-details');
+      
+      onValue(dbRef, async (snapshot) => {
+        if (snapshot.exists()) {
+          const pet = snapshot.val();
+          petImage.src = pet.petImage || ''; 
+          petDetails.innerHTML = `
+            <p><strong>Name:</strong> ${pet.petName}</p>
+            <p><strong>Species:</strong> ${pet.petSpecies}</p>
+            <p><strong>Breed:</strong> ${pet.petBreed}</p>
+            <p><strong>Age:</strong> ${pet.petAge}</p>
+            <p><strong>Size:</strong> ${pet.petSize}</p>
+            <p><strong>Vaccine:</strong> ${pet.vaccineName}</p>
+            <p><strong>Date Administered:</strong> ${pet.dateAdministered}</p>
+            <p><strong>Next Due Date:</strong> ${pet.nextDueDate}</p>
+            <p><strong>Email:</strong> ${pet.email}</p>
+          `;
         }
       });
-    });
-
-    const menuIcon = document.getElementById('menu-icon');
-    const navLinks = document.getElementById('nav-links');
-    menuIcon.addEventListener('click', () => {
-      menuIcon.classList.toggle('active');
-      navLinks.classList.toggle('active');
-    });
-  </script>
+  
+      modal.style.display = "block";
+  
+      const closeBtn = document.getElementsByClassName("close")[0];
+      closeBtn.onclick = function() {
+        modal.style.display = "none";
+      }
+  
+      window.onclick = function(event) {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      }
+    }
+  
+    window.onload = function() {
+      loadPetRecords();
+  
+      const searchButton = document.getElementById('search-button');
+      const searchInput = document.getElementById('search-input');
+      
+      searchButton.addEventListener('click', function() {
+        const searchTerm = searchInput.value.trim();
+        loadPetRecords(searchTerm);
+      });
+  
+      searchInput.addEventListener('input', function() {
+        const searchTerm = searchInput.value.trim();
+        loadPetRecords(searchTerm);
+      });
+    };
+  </script>  
 </body>
 </html>
