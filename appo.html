@@ -6,37 +6,188 @@
   <title>Appointment Management</title>
   <link rel="stylesheet" href="appo.css">
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDACGqgCvxlNCncb19OcFhrPekgsVswH0c",
+      authDomain: "vetmedica-67582.firebaseapp.com",
+      databaseURL: "https://vetmedica-67582-default-rtdb.firebaseio.com",
+      projectId: "vetmedica-67582",
+      storageBucket: "vetmedica-67582.appspot.com",
+      messagingSenderId: "189278245149",
+      appId: "1:189278245149:web:fcfdbdb7b01c1b8c4351f4",
+      measurementId: "G-TNPKG0NZR8",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    emailjs.init("VOC7SB-kqh4F-Q4Bb");
+
+    function sendEmail({ to_email, subject, name, serviceType, date, time }) {
+      const templateParams = {
+        to_email,
+        subject,
+        name,
+        serviceType,
+        date,
+        time
+      };
+
+      emailjs.send('service_e775v0v', 'template_x2uooia', templateParams)
+        .then((response) => {
+          console.log('Email sent successfully', response);
+        })
+        .catch((error) => {
+          console.error('Error sending email', error);
+          alert(`Failed to send the confirmation email. Error: ${error.text}`);
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const createAppointmentForm = document.getElementById("create-appointment-form");
+      const appointmentTimeInput = document.getElementById("appointmentTime");
+      const dateInput = document.getElementById("date");
+
+      let appointments = {};
+
+      function fetchAppointments() {
+        const appointmentsRef = ref(db, 'appointments');
+        onValue(appointmentsRef, (snapshot) => {
+          appointments = snapshot.val() || {};
+          console.log("Appointments updated", appointments);
+        });
+      }
+
+      fetchAppointments();
+
+      function isWithinThreeMonths(date) {
+        const currentDate = new Date();
+        const maxDate = new Date();
+        maxDate.setMonth(currentDate.getMonth() + 3);
+        return date <= maxDate;
+      }
+
+      function hasTimeConflict(date, time) {
+        const timeInMinutes = convertTimeToMinutes(time);
+        if (isNaN(timeInMinutes)) {
+          return false;
+        }
+
+        return Object.values(appointments).some((appt) => {
+          const appointmentTime = convertTimeToMinutes(appt.time);
+          return appt.date === date &&
+            (Math.abs(appointmentTime - timeInMinutes) < 30 || 
+            Math.abs(appointmentTime - timeInMinutes) === 30);
+        });
+      }
+
+      function convertTimeToMinutes(time) {
+        if (!time || !time.includes(":")) {
+          console.error("Invalid time format:", time);
+          return NaN;
+        }
+
+        const [hour, minute] = time.split(":").map(Number);
+        return hour * 60 + minute;
+      }
+
+      function preventPastDate() {
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+        dateInput.setAttribute("min", dateStr);
+      }
+
+      createAppointmentForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const serviceType = document.getElementById("serviceType").value;
+        const date = document.getElementById("date").value;
+        const time = document.getElementById("appointmentTime").value;
+
+        const selectedDate = new Date(date);
+
+        if (!isWithinThreeMonths(selectedDate)) {
+          alert("Appointments must be scheduled within the next 3 months.");
+          return;
+        }
+
+        const [hour, minute] = time.split(":").map(Number);
+        if (hour < 9 || (hour >= 18 && minute > 0)) {
+          alert("Appointments are only available between 9:00 AM and 6:00 PM.");
+          return;
+        }
+
+        if (hasTimeConflict(date, time)) {
+          alert("This appointment time is already booked or within 30 minutes of another appointment.");
+          return;
+        }
+
+        const newAppointment = {
+          name,
+          email,
+          serviceType,
+          date,
+          time,
+          status: "Approved",
+        };
+
+        const newId = Math.floor(100000 + Math.random() * 900000).toString();
+
+        set(ref(db, 'appointments/' + newId), newAppointment)
+          .then(() => {
+            alert("Appointment created successfully!");
+            sendEmail({
+              to_email: email,
+              subject: "Your Appointment Confirmation",
+              name,
+              serviceType,
+              date,
+              time
+            });
+            createAppointmentForm.reset();
+          })
+          .catch((error) => {
+            console.error("Error creating appointment:", error);
+            alert("Failed to create appointment. Please try again.");
+          });
+      });
+
+      preventPastDate();
+    });
+  </script>
 </head>
 <body>
   <nav>
     <div class="menu-icon" id="menu-icon">
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
     </div>
     <ul class="nav-links" id="nav-links">
-      <li><a href="dashboard.html">Dashboard</a></li>
-      <li><a href="petrecord.html">Pet Records</a></li>
-      <li><a href="manage.html">Manage Records</a></li>
-      <li><a href="appo.html">Appointment Scheduling Management</a></li>
-      <li><a href="login.html" id="logout-btn">Log Out</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="petrecord.html">Pet Records</a></li>
+        <li><a href="manage.html">Manage Record</a></li>
+        <li><a href="login.html" id="logout-btn">Log Out</a></li>
     </ul>
-  </nav>
+</nav>
 
-  <h1>Appointment Scheduling Management</h1>
+  <h1>Appointment Scheduling</h1>
 
   <div class="container">
     <div class="create-appointment">
       <h2>Create Appointment</h2>
-      <form id="create-appointment-form">
+      <form id="create-appointment-form" autocomplete="on">
         <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
+        <input type="text" id="name" name="name" autocomplete="name" required>
 
         <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
+        <input type="email" id="email" name="email" autocomplete="email" required>
 
         <label for="serviceType">Service Type:</label>
         <select id="serviceType" name="serviceType" required>
@@ -49,34 +200,16 @@
         <label for="date">Appointment Date:</label>
         <input type="date" id="date" name="date" required>
 
-        <label for="startTime">Start Time:</label>
-        <input type="time" id="startTime" name="startTime" required>
-
-        <label for="endTime">End Time:</label>
-        <input type="time" id="endTime" name="endTime" required>
+        <label for="appointmentTime">Appointment Time:</label>
+        <input type="time" id="appointmentTime" name="appointmentTime" required>
 
         <button type="submit">Create Appointment</button>
       </form>
     </div>
-
-    <div id="appointments" class="appointments-section"></div>
   </div>
 
   <footer>
     <p>&copy;2024 VetMedica. All rights reserved.</p>
   </footer>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script type="module" src="appo.js"></script>
-
-  <script>
-    const menuIcon = document.getElementById('menu-icon');
-    const navLinks = document.getElementById('nav-links');
-
-    menuIcon.addEventListener('click', () => {
-      navLinks.classList.toggle('active');
-      menuIcon.classList.toggle('active');
-    });
-  </script>
 </body>
 </html>
