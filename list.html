@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appointment List</title>
     <link rel="stylesheet" href="list.css">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
+
 <body>
     <nav>
         <div class="menu-icon" id="menu-icon">
@@ -17,30 +20,33 @@
             <li><a href="dashboard.html">Dashboard</a></li>
             <li><a href="petrecord.html">Pet Records</a></li>
             <li><a href="manage.html">Manage Records</a></li>
-            <li><a href="appo.html">Appointment Scheduling Management</a></li>
+            <li><a href="appo.html">Appointment Scheduling</a></li>
             <li><a href="login.html" id="logout-btn">Log Out</a></li>
         </ul>
     </nav>
 
-    <h1>Appointment List</h1>
-    <div id="appointment-container"></div>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Service Type</th>
-                    <th>Appointment Date</th>
-                    <th>Appointment Time</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="records-table-body"></tbody>
-        </table>
-    </div>
+    <header>
+        <h1>Appointment List</h1>
+    </header>
 
+    <main>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Service Type</th>
+                        <th>Appointment Date</th>
+                        <th>Appointment Time</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="records-table-body"></tbody>
+            </table>
+        </div>
+    </main>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getDatabase, ref, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
@@ -58,6 +64,8 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        emailjs.init("hgTB8KQdI2b4sOkwC");
+
         const appointmentsRef = ref(db, "mobileAppointments");
         const tableBody = document.getElementById("records-table-body");
 
@@ -71,148 +79,113 @@
 
                     const status = appointment.status || "Pending";
                     row.innerHTML = `
-                        <td class="editable" data-field="name">${appointment.name}</td>
-                        <td class="editable" data-field="email">${appointment.email}</td>
-                        <td class="editable" data-field="serviceType">${appointment.serviceType}</td>
-                        <td class="editable" data-field="appointmentDate">${appointment.appointmentDate}</td>
-                        <td class="editable" data-field="appointmentTime">${appointment.appointmentTime}</td>
-                        <td id="status-${key}" class="editable" data-field="status">${status}</td>
+                        <td>${appointment.name}</td>
+                        <td>${appointment.email}</td>
+                        <td>${appointment.serviceType}</td>
+                        <td>${appointment.date}</td>
+                        <td>${appointment.time}</td>
+                        <td id="status-${key}">${status}</td>
                         <td>
-                            <button data-id="${key}" class="accept-btn">Accept</button>
-                            <button data-id="${key}" class="reject-btn">Reject</button>
-                            <button data-id="${key}" class="update-btn" style="display:none;">Update</button>
-                            <button data-id="${key}" class="delete-btn" style="display:none;">Delete</button>
+                            <button data-id="${key}" class="accept-btn" style="display: ${status === "Pending" ? "inline-block" : "none"};">Accept</button>
+                            <button data-id="${key}" class="reject-btn" style="display: ${status === "Pending" ? "inline-block" : "none"};">Reject</button>
+                            <button data-id="${key}" class="store-btn" style="display: ${status === "Approved" ? "inline-block" : "none"};">Store</button>
+                            <button data-id="${key}" class="archive-btn" style="display: ${status === "Rejected" ? "inline-block" : "none"};">Archive</button>
                         </td>
                     `;
                     tableBody.appendChild(row);
 
-                    attachButtonListeners(row, key, appointment.status);
+                    attachButtonListeners(row, key, appointment);
                 });
             } else {
                 tableBody.innerHTML = "<tr><td colspan='7'>No appointments found</td></tr>";
             }
         });
 
-        async function updateAppointmentStatus(id, status) {
+        function attachButtonListeners(row, key, appointment) {
+            const acceptButton = row.querySelector(".accept-btn");
+            const rejectButton = row.querySelector(".reject-btn");
+            const storeButton = row.querySelector(".store-btn");
+            const archiveButton = row.querySelector(".archive-btn");
+
+            acceptButton.addEventListener("click", () => {
+                updateAppointmentStatus(key, "Approved", appointment);
+                updateButtonVisibility(acceptButton, rejectButton, storeButton, archiveButton);
+            });
+
+            rejectButton.addEventListener("click", () => {
+                updateAppointmentStatus(key, "Rejected", appointment);
+                updateButtonVisibility(acceptButton, rejectButton, storeButton, archiveButton);
+            });
+
+            storeButton.addEventListener("click", () => {
+                moveToFirebase("appointments", key)
+                    .then(() => console.log("Appointment stored successfully"))
+                    .catch((error) => console.error("Error storing appointment:", error));
+            });
+
+            archiveButton.addEventListener("click", () => {
+                moveToFirebase("archives", key)
+                    .then(() => console.log("Appointment archived successfully"))
+                    .catch((error) => console.error("Error archiving appointment:", error));
+            });
+        }
+
+        function updateButtonVisibility(acceptBtn, rejectBtn, storeBtn, archiveBtn) {
+            acceptBtn.style.display = "none";
+            rejectBtn.style.display = "none";
+            storeBtn.style.display = "inline-block";
+            archiveBtn.style.display = "inline-block";
+        }
+
+        async function updateAppointmentStatus(id, status, appointment) {
             try {
                 const statusRef = ref(db, `mobileAppointments/${id}`);
                 await update(statusRef, { status });
+                document.getElementById(`status-${id}`).innerText = status;
                 console.log("Status updated successfully");
+
+                sendEmailNotification(appointment, status);
             } catch (error) {
                 console.error("Error updating status:", error);
             }
         }
 
-        function attachButtonListeners(row, key, currentStatus) {
-            const acceptButton = row.querySelector(".accept-btn");
-            const rejectButton = row.querySelector(".reject-btn");
-            const updateButton = row.querySelector(".update-btn");
-            const deleteButton = row.querySelector(".delete-btn");
+        function sendEmailNotification(appointment, status) {
+            const emailParams = {
+                to_name: appointment.name,
+                to_email: appointment.email,
+                service_type: appointment.serviceType,
+                appointment_date: appointment.date,
+                appointment_time: appointment.time,
+                status: status,
+            };
 
-            acceptButton.addEventListener("click", () => {
-                updateAppointmentStatus(key, "Accepted");
-                acceptButton.style.display = "none";
-                rejectButton.style.display = "none";
-                updateButton.style.display = "inline-block";
-                deleteButton.style.display = "inline-block";
-            });
-
-            rejectButton.addEventListener("click", () => {
-                updateAppointmentStatus(key, "Rejected");
-                acceptButton.style.display = "none";
-                rejectButton.style.display = "none";
-                updateButton.style.display = "inline-block";
-                deleteButton.style.display = "inline-block";
-            });
-
-            updateButton.addEventListener("click", () => {
-                makeFieldsEditable(row, key);
-            });
-
-            deleteButton.addEventListener("click", () => {
-                remove(ref(db, `mobileAppointments/${key}`))
-                    .then(() => {
-                        console.log("Appointment deleted successfully");
-                        updateButton.style.display = "none";
-                        deleteButton.style.display = "none";
-                    })
-                    .catch((error) => {
-                        console.error("Error deleting appointment:", error);
-                    });
-            });
-        }
-
-        function makeFieldsEditable(row, key) {
-            const fields = row.querySelectorAll(".editable");
-            fields.forEach((field) => {
-                const fieldValue = field.innerText;
-                const dataField = field.getAttribute("data-field");
-
-                if (dataField === "name") {
-                    field.innerHTML = `<input type="text" value="${fieldValue}" />`;
-                } else if (dataField === "email") {
-                    field.innerHTML = `<input type="email" value="${fieldValue}" />`;
-                } else if (dataField === "serviceType") {
-                    field.innerHTML = `<select><option value="Grooming" ${fieldValue === "Grooming" ? "selected" : ""}>Grooming</option><option value="Vaccination" ${fieldValue === "Vaccination" ? "selected" : ""}>Vaccination</option><option value="Check Up" ${fieldValue === "Check Up" ? "selected" : ""}>Check Up</option></select>`;
-                } else if (dataField === "appointmentDate") {
-                    field.innerHTML = `<input type="date" value="${fieldValue}" />`;
-                } else if (dataField === "appointmentTime") {
-                    field.innerHTML = `<input type="time" value="${fieldValue}" />`;
-                }
-            });
-
-            const updateButton = row.querySelector(".update-btn");
-            const deleteButton = row.querySelector(".delete-btn");
-
-            updateButton.style.display = "inline-block";
-            deleteButton.style.display = "inline-block";
-
-            updateButton.addEventListener("click", () => {
-                const updatedData = {};
-                fields.forEach((field) => {
-                    const inputField = field.querySelector("input") || field.querySelector("select");
-                    updatedData[field.getAttribute("data-field")] = inputField ? inputField.value : field.innerText;
-                });
-
-                updateAppointment(key, updatedData);
-                updateButton.style.display = "none";
-                deleteButton.style.display = "none";
-            });
-
-            deleteButton.addEventListener("click", () => {
-                remove(ref(db, `mobileAppointments/${key}`))
-                    .then(() => {
-                        console.log("Appointment deleted successfully");
-                        updateButton.style.display = "none";
-                        deleteButton.style.display = "none";
-                    })
-                    .catch((error) => {
-                        console.error("Error deleting appointment:", error);
-                    });
-            });
-        }
-
-        async function updateAppointment(id, updatedData) {
-            try {
-                const appointmentRef = ref(db, `mobileAppointments/${id}`);
-                const snapshot = await get(appointmentRef);
-                const currentData = snapshot.val();
-
-                const dataToUpdate = {};
-                Object.keys(updatedData).forEach((field) => {
-                    if (updatedData[field] !== currentData[field]) {
-                        dataToUpdate[field] = updatedData[field];
+            emailjs
+                .send("service_fqllgpc", "template_eed5sd5", emailParams)
+                .then(
+                    () => {
+                        console.log("Email notification sent successfully");
+                    },
+                    (error) => {
+                        console.error("Error sending email notification:", error);
                     }
-                });
+                );
+        }
 
-                if (Object.keys(dataToUpdate).length > 0) {
-                    await update(appointmentRef, dataToUpdate);
-                    console.log("Appointment updated successfully");
-                } else {
-                    console.log("No changes detected, no update necessary");
+        async function moveToFirebase(destinationPath, key) {
+            try {
+                const appointmentRef = ref(db, `mobileAppointments/${key}`);
+                const snapshot = await get(appointmentRef);
+                const appointmentData = snapshot.val();
+
+                if (appointmentData) {
+                    const destinationRef = ref(db, `${destinationPath}/${key}`);
+                    await update(destinationRef, appointmentData);
+                    await remove(appointmentRef); // Remove from original location
+                    console.log(`Appointment moved to ${destinationPath}`);
                 }
             } catch (error) {
-                console.error("Error updating appointment:", error);
+                console.error("Error moving appointment:", error);
             }
         }
     </script>
